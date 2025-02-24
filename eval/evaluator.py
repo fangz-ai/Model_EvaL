@@ -81,17 +81,36 @@ class evaluator(ABC):
         # tokens = word_tokenize(text)
         # tokens = text.split()
 
+        # doc = nlp(text)
+        # tokens = [token.text for token in doc]
+        # import stanza
+
+        # stanza.download(lang='multilingual')
+        # nlp2 = stanza.Pipeline(lang='multilingual', processor='tokenize')
+        # breakpoint()
+        # doc = nlp2(text)
+        # tokens = [word.text for sent in doc.sentences for word in sent.words]
+        text = "Paris is 法国的首都Paris"
+        text = "Paris is the caption of France"
+        nlp3 = spacy.blank("xx")
         doc = nlp(text)
         tokens = [token.text for token in doc]
 
         language_tags = []
 
+        import fasttext
+
+        # 下载语言检测模型 lid.176.bin
+        model = fasttext.load_model('lid.176.bin')
         for token in tokens:
             try:
                 lang = detect(token)
+                lang = model.predict(token, k=5)
+                breakpoint()
                 language_tags.append((token, lang))
             except:
                 language_tags.append((token, "unknown"))
+        breakpoint()
         
         return language_tags
 
@@ -157,7 +176,6 @@ text = "黄土高原的最高山是天台山，但天台山是否在陕西呢？
         黄土高原的天台山else可能在黄土高原的南before部，而天台山以南的 plateau可能位于黄土高原的北部，\
         这样黄土高原的最高山可能在天台山以南的 plateau。"
 language_tags = EVA_TEST.detect_language_per_word(text)
-breakpoint()
 switches = EVA_TEST.calculate_language_switch_frequency(language_tags)
 print(f"Language switches: {switches}")
 
