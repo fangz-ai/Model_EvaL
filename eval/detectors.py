@@ -3,6 +3,7 @@ import re
 import fasttext
 from abc import ABC
 from typing import Dict, List, Tuple, Union
+from eval import Evaluator
 
 class Detectors(ABC):
     def __init__(self):
@@ -68,7 +69,7 @@ class Detectors(ABC):
         head = 0
         languages = []
 
-        breakpoint()
+        # breakpoint()
         while head < len(detected_languages):
             max_length = 1
             language = ""
@@ -91,14 +92,98 @@ class Detectors(ABC):
             head += max_length
 
             languages.append(language)
-        breakpoint()
+        # breakpoint()
         predict, probability = self.model.predict("block.", k=5)
 
         if len(language) > 1:
             self.language_switch = True
         return languages
 
+    def detect_continuous_repetition_with_hash(self, text : str, k : int) -> List[int]:
+        base = 31
+        mod = 1e9+7
+        n = len(text)
+        # breakpoint()
 
+        if len(text) < 2 * k:
+            return []
+        
+        current_hash = 0
+        for i in range(k):
+            current_hash = (current_hash * base + ord(text[i])) % mod
+
+        prev_hash = current_hash
+        base_k = pow(base, k, int(mod))
+
+        result = []
+
+        for i in range(k, n):
+            current_hash = (current_hash * base - ord(text[i-k]) * base_k + ord(text[i])) % mod
+            current_hash = (current_hash + mod) % mod
+
+            if i >= 2 * k - 1 and current_hash == prev_hash:
+                result.append(i)
+            # print(i, i-2*k+1, i-k+1)
+
+            if i >= 2 * k - 1:
+                prev_hash = (prev_hash * base - ord(text[i-2*k+1]) * base_k + ord(text[i-k+1])) % mod
+                prev_hash = (prev_hash + mod) % mod
+        return result
+
+    def calculate_hash(self, s, base=31, mod=10**9+7):
+        hash_val = 0
+        for char in s:
+            hash_val = (hash_val * base + ord(char)) % mod
+        return hash_val
+
+    def check_adjacent_identical_strings(self, lst, text):
+        base = 31
+        mod = 10**9 + 7
+
+        target_hash = self.calculate_hash(text, base, mod)
+
+        n = len(lst)
+        for i in range(n - 1):
+            hash_i = self.calculate_hash(lst[i], base, mod)
+            hash_next = self.calculate_hash(lst[i + 1], base, mod)
+
+        if hash_i == target_hash and hash_next == target_hash:
+            if lst[i] == text and lst[i + 1] == text:
+                return True
+
+        return False
+
+    def test_repetition_error(self, text : str):
+        repeat = dict()
+        for i in range(1, len(text)//2):
+
+            i_result = self.detect_continuous_repetition_with_hash(text, i)
+            repeat[i] = i_result
+        breakpoint()
+
+        # for key, values in repeat:
+        #     if values:
+        #         for index in values:
+        #             text1 = text[index - key + 1 : index]
+        #             text2 = text[index - 2 * key + 1 : index - key]
+
+        fenci  = Evaluator()
+        words = fenci.segment_words(text)
+
+        for i in range(1, len(text)//2):
+            for j in range(len(repeat[i])):
+                index = repeat[i][j]
+                text1 = text[index - i + 1 : index + 1]
+                text2 = text[index - 2 * i + 1 : index - i + 1]
+                print(text1, text2)
+
+                if self.check_adjacent_identical_strings(words, text1):
+                    return False
+
+        
+        return True
+
+        
 
 
     # def text_quality_checker(self, text : str):
@@ -111,3 +196,8 @@ text = "巴黎是法国的首都！"
 DET = Detectors()
 languages = DET.test_language_drift(text)
 print(f"Detected languages: {languages}")
+text = "“我明白了了，也懂得了分分合合”"
+# text = "山东最高的山是山连山、山连山、山连山"
+# text = "channel"
+thelist = DET.test_repetition_error(text)
+print("是否有字词重复：", thelist)
