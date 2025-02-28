@@ -5,47 +5,108 @@ from abc import ABC
 from typing import Dict, List, Tuple, Union
 from eval import Evaluator
 import nltk
-from nltk.corpus import wordnet
+# from nltk.corpus import wordnet
 
 class Detectors(ABC):
     def __init__(self):
         super().__init__()
-        self.load_model()
+        self.load_nlp_models()
+    
+    def load_nlp_models(self):
+        """
+        Load NLP-related models and resources.
 
-    def load_model(self):
+        This function initializes and configures various resources required for NLP tasks, 
+        such as WordNet for semantic analysis and FastText for language detection.
+
+        Key functionalities:
+        1. Configure the path for third-party resources.
+        2. Set up the NLTK WordNet data path to enable semantic features like `synsets`.
+        3. Load the FastText language detection model for identifying the language of input text.
+
+        Steps:
+        1. Determine the directory of the current script.
+        2. Define the path to the third-party resources directory (`../third_party`).
+        3. Add the WordNet data path to NLTK's resource paths, ensuring proper functionality of WordNet.
+        4. Retrieve the English vocabulary using the NLTK `words` corpus.
+        5. Load the FastText language detection model file (`lid.176.bin`) into the `fasttext_model` attribute.
+
+        Dependencies:
+        - **NLTK**: Used for WordNet and Words corpus.
+        - **FastText**: Used for loading the language detection model.
+
+        Requirements:
+        - Ensure the `../third_party/nltk_data` directory contains WordNet and Words data files.
+        - Ensure the `../third_party/fasttext/lid.176.bin` file exists; otherwise, the FastText model will fail to load.
+
+        Attributes:
+        - `self.synsets`: A reference to the NLTK WordNet `synsets` function for semantic analysis.
+        - `self.english_vocab`: A set of English words loaded from the NLTK `words` corpus.
+        - `self.fasttext_model`: The loaded FastText language detection model.
+
+        """
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        self.third_party_path = os.path.join(current_dir, '../third_party')
+        self.third_party_path = os.path.join(current_dir, "../third_party")
+
+        wordnet_path = os.path.join(self.third_party_path, 'nltk_data')
+        nltk.data.path.append(wordnet_path)
+        self.synsets = nltk.corpus.wordnet.synsets
+
+        words_path = os.path.join(self.third_party_path, 'nltk_data')
+        self.english_vocab = set(nltk.corpus.words.words())
+
         fasttext_path = os.path.join(self.third_party_path, 'fasttext', 'lid.176.bin')
-        self.model = fasttext.load_model(fasttext_path)
+        self.fasttext_model = fasttext.load_model(fasttext_path)
+
+        # from nltk.corpus import wordnet
+        # print(wordnet.root)
+        # breakpoint()
 
     def test_language_drift(self, text : str, test_punctuation=False) -> List[str]:
+        """
+        Detect language drift in the given text by splitting it into language blocks
+        and identifying the predominant language in each block.
 
-        pattern = pattern = re.compile(
-            r'[\u4e00-\u9fff]+'  # 中文
-            r'|[\u3040-\u30ff\u31f0-\u31ff]+'  # 日语
-            r'|[\uac00-\ud7af]+'  # 韩语
-            r'|[\u0400-\u04FF]+'  # 俄语
-            r'|[\u0600-\u06FF]+'  # 阿拉伯语
-            r'|[\u0370-\u03FF]+'  # 希腊语
-            r'|[\u0E00-\u0E7F]+'  # 泰语
-            r'|[a-zA-Z0-9]+'  # 英文和数字
-            r'|[^\w\s]'  # 其他符号
+        Args:
+            text (str): The input text to analyze.
+            test_punctuation (bool): Whether to include punctuation in the analysis.
+
+        Returns:
+            List[str]: A list of detected languages for each segment of the text.
+        """
+        pattern = re.compile(
+            r'[\u4e00-\u9fff]+'  # 中文 Chinese
+            r'|[\u3040-\u30ff\u31f0-\u31ff]+'  # 日语 平假名、片假名 Japanese (Hiragana, Katakana)
+            r'|[\uac00-\ud7af]+'  # 韩语 Korean
+            r'|[\u0400-\u04FF]+'  # 俄语 Russian
+            r'|[\u0600-\u06FF]+'  # 阿拉伯语 Arabic
+            r'|[\u0370-\u03FF]+'  # 希腊语 Greek
+            r'|[\u0E00-\u0E7F]+'  # 泰语 Thai
+            r'|[a-zA-Z0-9]+'  # 英文和数字 English and numbers
+            r'|[^\w\s]'  # 其他符号 Other symbols
         )
         language_blocks = pattern.findall(text)
 
+        def add_prev_context_before_punctuation(langguage_blocks : List[str], context_window=1) -> List[str]:
+            """
+            Add surrounding context to punctuation blocks.
 
-        def add_prev_context_before_punctuation(langguage_blocks : List, context_window=1, ):
+            Args:
+                blocks (List[str]): The list of language blocks.
+                context_window (int): The number of surrounding blocks to include.
 
+            Returns:
+                List[str]: The modified list of language blocks.
+            """
             result = []
             for i, block in enumerate(language_blocks):
-            # 如果当前块是标点符号（非字母、非数字、非空白字符）
+                # Check if the current block is punctuation
                 if re.match(r'[^\w\s]', block):
                     if not test_punctuation:
                         continue
-                    # 获取上下文
+                    # Add preceding context to punctuation
                     prev_context = language_blocks[i - context_window] if i - context_window >= 0 else ""
                     # next_context = language_blocks[i + context_window] if i + context_window < len(language_blocks) else ""
-                    # 将上下文与标点符号组合
                     combined_block = block
                     pre = 0
                     while re.match(r'[^\w\s]', prev_context):
@@ -55,34 +116,34 @@ class Detectors(ABC):
                     combined_block = f"{prev_context}{combined_block}"
                     result.append(combined_block)
                 else:
-                    # 非标点符号块直接添加
+                    # Add non-punctuation blocks as is
                     result.append(block)
 
             return result
 
         language_blocks = add_prev_context_before_punctuation(language_blocks)
-        # 用 fastText 检测每个语言块的语言
+        # Detect language for each block with FastText
         detected_languages = []
 
         whitelist = {"arms", "amidst"}
-        import nltk
-        nltk.download('words')
-        from nltk.corpus import words
-        english_vocab = set(words.words())
+        # import nltk
+        # # nltk.download('words')
+        # from nltk.corpus import words
+        # english_vocab = set(words.words())
 
         from langdetect import detect
 
         import langid
 
         usa = "helo"
-        print("is_english:", usa.lower() in english_vocab)
+        print("is_english:", usa.lower() in self.english_vocab)
         print("is_english:", detect(usa))
         language, confidence = langid.classify(usa)
         print(language, confidence)
 
         for block in language_blocks:
             # fastText 预测语言
-            predictions, probabilities = self.model.predict(block, k=10)
+            predictions, probabilities = self.fasttext_model.predict(block, k=10)
             if block in whitelist:
                 filtered_results = [("en", 1)]
             else:
@@ -93,9 +154,9 @@ class Detectors(ABC):
                 ]
 
                 if not 'en' in filtered_results and re.match(r'[a-zA-Z0-9]+', block):
-                    is_english = block.lower() in english_vocab
+                    is_english = block.lower() in self.english_vocab
                     if not is_english:
-                        definition = wordnet.synsets(block)
+                        definition = self.synsets(block)
                         if definition:
                             is_english = True
                     
@@ -133,7 +194,7 @@ class Detectors(ABC):
             breakpoint()            
             head += max_length
             languages.append(language)
-        predict, probability = self.model.predict("block.", k=5)
+        predict, probability = self.fasttext_model.predict("block.", k=5)
 
         if len(language) > 1:
             self.language_switch = True
