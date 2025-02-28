@@ -3,15 +3,22 @@ import sys
 import json
 import time
 import argparse
+import datasets
 
 from transformers import AutoTokenizer, AutoProcessor
 from abc import ABC, abstractmethod
+
 # 获取当前脚本所在目录的路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
 # 获取上一层目录的路径
 parent_dir = os.path.abspath(os.path.join(current_dir, ".."))
+eval_dir = os.path.abspath(os.path.join(current_dir, "../eval"))
 # 将上一层目录添加到 sys.path
 sys.path.insert(0, parent_dir)
+sys.path.insert(0, eval_dir)
+
+from detectors import Detectors
+
 
 # 导入 chat.so
 import chat
@@ -145,8 +152,7 @@ class BmodelTask():
         tokens = self.tokenizer(text).input_ids
         return tokens
 
-    # def evaluate(self, dataset="SQuAD"):
-        
+      
 
     def model_generate(self, question):
         self.init_history()
@@ -156,7 +162,7 @@ class BmodelTask():
 
         tok_num = 0
         self.answer_cur = ""
-        self.answer_token = [token]
+        self.answer_token = []
         next_start = time.time()
 
         # Following tokens
@@ -175,6 +181,20 @@ class BmodelTask():
 
         # evaluate(self.answer_cur, dataset="SQuAD")
         return self.answer_cur
+    
+    def model_evaluate(self, dataset="SQuAD"):
+        # eval = eval.Evaluator()
+        detector = Detectors()
+
+        self.squad_dataset = datasets.load_dataset("parquet", data_files="../dataset/squad/plain_text/*.parquet")
+        for i in range(10):
+            question = self.squad_dataset['train'][i]['context'] + self.squad_dataset['train'][i]['question']
+            ref = self.squad_dataset['train'][i]['answers']
+            answer = self.model_generate(question)
+            languages = detector.test_language_drift(answer)
+            print(f"Detected languages: {languages}")
+            print("answer: {}, ref: {}".format(answer, ref))
+        breakpoint()
 
 if __name__ == "__main__": 
     parser = argparse.ArgumentParser()
@@ -190,8 +210,7 @@ if __name__ == "__main__":
     parser.add_argument('--model_type', type=str, help="model type")
     args = parser.parse_args()
     bmodel_test = BmodelTask(args)
-    answer = bmodel_test.model_generate("hello")
-    print(answer)
+    answer = bmodel_test.model_evaluate()
 
 
 
