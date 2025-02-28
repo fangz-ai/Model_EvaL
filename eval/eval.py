@@ -33,7 +33,7 @@ class Evaluator(ABC):
     def load_nlp_models(self):
         current_dir = os.path.dirname(os.path.abspath(__file__))
         self.third_party_path = os.path.join(current_dir, '../third_party')
-        punkt_path = os.path.join(self.third_party_path, 'punkt')
+        punkt_path = os.path.join(self.third_party_path, 'nltk_data/tokenizers/punkt')
         nltk.data.path.append(punkt_path)
         self.word_tokenize = nltk.tokenize.word_tokenize
 

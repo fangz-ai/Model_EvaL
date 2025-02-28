@@ -125,58 +125,57 @@ class Detectors(ABC):
         # Detect language for each block with FastText
         detected_languages = []
 
-        whitelist = {"arms", "amidst"}
-        # import nltk
-        # # nltk.download('words')
-        # from nltk.corpus import words
-        # english_vocab = set(words.words())
+        # whitelist = {"arms", "amidst"}
+        # # import nltk
+        # # # nltk.download('words')
+        # # from nltk.corpus import words
+        # # english_vocab = set(words.words())
 
-        from langdetect import detect
+        # from langdetect import detect
 
-        import langid
+        # import langid
 
-        usa = "helo"
-        print("is_english:", usa.lower() in self.english_vocab)
-        print("is_english:", detect(usa))
-        language, confidence = langid.classify(usa)
-        print(language, confidence)
+        # usa = "helo"
+        # print("is_english:", usa.lower() in self.english_vocab)
+        # print("is_english:", detect(usa))
+        # language, confidence = langid.classify(usa)
+        # print(language, confidence)
 
         for block in language_blocks:
-            # fastText 预测语言
             predictions, probabilities = self.fasttext_model.predict(block, k=10)
-            if block in whitelist:
-                filtered_results = [("en", 1)]
-            else:
-                filtered_results = [
-                    (label.replace("__label__", "").replace("uk", "en"), prob)  # 去掉 "__label__" 前缀
-                    for label, prob in zip(predictions, probabilities)
-                    if prob > 0.01
-                ]
 
-                if not 'en' in filtered_results and re.match(r'[a-zA-Z0-9]+', block):
-                    is_english = block.lower() in self.english_vocab
-                    if not is_english:
-                        definition = self.synsets(block)
-                        if definition:
-                            is_english = True
-                    
-                    if is_english:
-                        filtered_results.append(("en", 1))
+            filtered_results = [
+                (label.replace("__label__", "").replace("uk", "en"), prob)
+                for label, prob in zip(predictions, probabilities)
+                if prob > 0.01
+            ]
 
-            print(block, filtered_results)
-            # language = tuple(prediction.replace("__label__", "") for prediction in predictions) # 去掉标签前缀
+            if not 'en' in filtered_results and re.match(r'[a-zA-Z0-9]+', block):
+                is_english = block.lower() in self.english_vocab
+                if not is_english:
+                    definition = self.synsets(block)
+                    if definition:
+                        is_english = True
+                
+                if is_english:
+                    filtered_results.append(("en", 1))
+
+            # print(block, filtered_results)
             detected_languages.append(filtered_results)
         
 
         head = 0
         languages = []
 
+        # Merge consecutive blocks with the same language.
         while head < len(detected_languages):
             max_length = 1
             language = detected_languages[head][0][0]
+
             for head_index in range(len(detected_languages[head])):
                 tail = head + 1
                 lang = detected_languages[head][head_index][0]
+
                 while tail < len(detected_languages):
                     last = tail
                     for tail_index in range(len(detected_languages[tail])):
@@ -187,14 +186,15 @@ class Detectors(ABC):
                         break
 
                 if (tail - head) > max_length:
-
                     max_length = tail - head
                     language = detected_languages[head][head_index][0]
 
-            breakpoint()            
+                    if max_length == len(detected_languages):
+                        break
+     
+            # print(language, detected_languages[tail])    
             head += max_length
             languages.append(language)
-        predict, probability = self.fasttext_model.predict("block.", k=5)
 
         if len(language) > 1:
             self.language_switch = True
@@ -298,7 +298,7 @@ text = "In front of the Notre Dame Main Building, there is a copper statue of Ch
 text = "The Grotto at Notre Dame, also known as the Grotto of Lourdes, is a significant religious site located on the campus of the University of Notre Dame in Indiana, USA. Architecturally, it embodies a Catholic character and is designed to resemble the original grotto at Lourdes, France, where the Virgin Mary is reputed to have appeared to Saint Bernadette Soubirous in 1858. This replica serves as a place of prayer and reflection for students, faculty, and visitors, offering a serene and contemplative space amidst the academic environment.\
 The Grotto features a statue of the Virgin Mary, often adorned with flowers and candles by visitors, symbolizing devotion and veneration. It is typically surrounded by a garden, which adds to its peaceful atmosphere, encouraging reflection and spiritual connection. The Grotto is often visited by students seeking solace, inspiration, or a moment of quiet reflection, especially during times of personal or academic stress.\
 In addition to its spiritual significance, the Grotto also serves as a testament to the university's commitment to Catholic values and traditions, integrating religious symbolism and practices into the daily life of the campus community. It is a physical manifestation of Notre Dame's Catholic character, providing a tangible connection to the faith and its history, particularly the Marian devotion that is central to Catholicism."
-text = "这个名为bonjour的国家很美丽"
+# text = "这个名为bonjour的国家很美丽"
 DET = Detectors()
 languages = DET.test_language_drift(text)
 print(f"Detected languages: {languages}")
@@ -318,3 +318,5 @@ nltk.download('wordnet')
 
 # 示例：查找 "USA" 的定义
 print(wordnet.synsets("bonjour"))
+
+print(wordnet.synsets("Soubirous"))
