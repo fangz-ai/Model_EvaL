@@ -31,3 +31,15 @@ print(words)
 text = "啦啦啦，啦啦啦，我是卖报的小行家，嘻嘻哈哈"
 words = list(jieba.cut(text))
 print(words) 
+
+text = "万一要做根管，我这周就分享不了了"
+words = list(jieba.cut(text))
+print(words)
+
+text = "零食太多了，我吃不了了"
+words = list(jieba.cut(text))
+print(words)
+
+text = "不了了之了了解了吗？"
+words = list(jieba.cut(text))
+print(words)

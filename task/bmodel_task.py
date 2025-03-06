@@ -18,6 +18,8 @@ sys.path.insert(0, parent_dir)
 sys.path.insert(0, eval_dir)
 
 from detectors import Detectors
+from indi import Indicators
+from eva import Evaluator
 
 
 # 导入 chat.so
@@ -185,16 +187,20 @@ class BmodelTask():
     def model_evaluate(self, dataset="SQuAD"):
         # eval = eval.Evaluator()
         detector = Detectors()
+        indicator = Indicators()
+        evaluator = Evaluator()
 
         self.squad_dataset = datasets.load_dataset("parquet", data_files="../dataset/squad/plain_text/*.parquet")
         for i in range(10):
+            print(f"============================ Case {i} ============================")
             question = self.squad_dataset['train'][i]['context'] + self.squad_dataset['train'][i]['question']
             ref = self.squad_dataset['train'][i]['answers']
             answer = self.model_generate(question)
-            languages = detector.test_language_drift(answer)
-            print(f"Detected languages: {languages}")
-            print("answer: {}, ref: {}".format(answer, ref))
-        breakpoint()
+            evaluator.eval(answer, ref['text'])
+            # languages = detector.test_language_drift(answer)
+            
+            # print(f"Detected languages: {languages}")
+            # print("answer: {}, ref: {}".format(answer, ref))
 
 if __name__ == "__main__": 
     parser = argparse.ArgumentParser()

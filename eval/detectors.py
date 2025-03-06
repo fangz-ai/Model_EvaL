@@ -244,12 +244,35 @@ class Detectors(ABC):
 
         n = len(lst)
         for i in range(n - 1):
-            hash_i = self.calculate_hash(lst[i], base, mod)
-            hash_next = self.calculate_hash(lst[i + 1], base, mod)
+            sub_len = len(lst[i])
+            sub_str = lst[i]
+            index = i + 1
+            while sub_len < len(text):
+                sub_len += len(lst[index])
+                # sub_str += lst[index]
+                sub_str = ''.join([sub_str, lst[index]])
+                index += 1
+                if index >= n:
+                    break
+            if sub_len == len(text):
+                # next_str = lst[index] += lst[index + j] for j in range(index - i)
+                next_str = ''.join(lst[index + j] for j in range(index - i) if index + j < len(lst))
+                sub_hash = self.calculate_hash(sub_str, base, mod)
+                next_hash = self.calculate_hash(next_str, base, mod)
 
-        if hash_i == target_hash and hash_next == target_hash:
-            if lst[i] == text and lst[i + 1] == text:
-                return True
+                if target_hash == sub_hash and sub_hash == next_hash:
+                    if sub_str == text and next_str == text:
+                        return True
+
+                
+
+        # for i in range(n - 1):
+        #     hash_i = self.calculate_hash(lst[i], base, mod)
+        #     hash_next = self.calculate_hash(lst[i + 1], base, mod)
+
+        #     if hash_i == target_hash and hash_next == target_hash:
+        #         if lst[i] == text and lst[i + 1] == text:
+        #             return True
 
         return False
 
@@ -274,7 +297,6 @@ class Detectors(ABC):
                 index = repeat[i][j]
                 text1 = text[index - i + 1 : index + 1]
                 text2 = text[index - 2 * i + 1 : index - i + 1]
-
                 if self.check_adjacent_identical_strings(words, text1):
                     return False
 
@@ -286,37 +308,43 @@ class Detectors(ABC):
 
     # def text_quality_checker(self, text : str):
 
+def main():
 
-# 示例文本
-text = "Paris is 法国の首都Paris。こんにちは!"
-text = "巴黎是法国的首都！"
-text = "The Virgin Mary is said to have allegedly appeared to Saint Bernadette Soubirous in 1858 in Lourdes, France."
-text = "The daily student paper at Notre Dame is called \"The Observer\"."
-text = "In front of the Notre Dame Main Building, there is a copper statue of Christ with arms upraised, and it bears the legend \"Venite Ad Me Omnes\"."
-# text = "In front of the Notre Dame Main Building, there is a copper statue of Christ with arms upraised, and it bears the legend Venite Ad Me Omnes."
-# text = "Paris is the caption of France!"
-text = "The Grotto at Notre Dame, also known as the Grotto of Lourdes, is a significant religious site located on the campus of the University of Notre Dame in Indiana, USA. Architecturally, it embodies a Catholic character and is designed to resemble the original grotto at Lourdes, France, where the Virgin Mary is reputed to have appeared to Saint Bernadette Soubirous in 1858. This replica serves as a place of prayer and reflection for students, faculty, and visitors, offering a serene and contemplative space amidst the academic environment.\
-The Grotto features a statue of the Virgin Mary, often adorned with flowers and candles by visitors, symbolizing devotion and veneration. It is typically surrounded by a garden, which adds to its peaceful atmosphere, encouraging reflection and spiritual connection. The Grotto is often visited by students seeking solace, inspiration, or a moment of quiet reflection, especially during times of personal or academic stress.\
-In addition to its spiritual significance, the Grotto also serves as a testament to the university's commitment to Catholic values and traditions, integrating religious symbolism and practices into the daily life of the campus community. It is a physical manifestation of Notre Dame's Catholic character, providing a tangible connection to the faith and its history, particularly the Marian devotion that is central to Catholicism."
-# text = "这个名为bonjour的国家很美丽"
-DET = Detectors()
-languages = DET.test_language_drift(text)
-print(f"Detected languages: {languages}")
-text = "“我明白了了，也懂得了分分合合”"
-# text = "山东最高的山是山连山、山连山、山连山"
-# text = "channel"
-thelist = DET.test_repetition_error(text)
-print("是否有字词重复：", thelist)
+    # 示例文本
+    text = "Paris is 法国の首都Paris。こんにちは!"
+    text = "巴黎是法国的首都！"
+    text = "The Virgin Mary is said to have allegedly appeared to Saint Bernadette Soubirous in 1858 in Lourdes, France."
+    text = "The daily student paper at Notre Dame is called \"The Observer\"."
+    text = "In front of the Notre Dame Main Building, there is a copper statue of Christ with arms upraised, and it bears the legend \"Venite Ad Me Omnes\"."
+    # text = "In front of the Notre Dame Main Building, there is a copper statue of Christ with arms upraised, and it bears the legend Venite Ad Me Omnes."
+    # text = "Paris is the caption of France!"
+    text = "The Grotto at Notre Dame, also known as the Grotto of Lourdes, is a significant religious site located on the campus of the University of Notre Dame in Indiana, USA. Architecturally, it embodies a Catholic character and is designed to resemble the original grotto at Lourdes, France, where the Virgin Mary is reputed to have appeared to Saint Bernadette Soubirous in 1858. This replica serves as a place of prayer and reflection for students, faculty, and visitors, offering a serene and contemplative space amidst the academic environment.\
+    The Grotto features a statue of the Virgin Mary, often adorned with flowers and candles by visitors, symbolizing devotion and veneration. It is typically surrounded by a garden, which adds to its peaceful atmosphere, encouraging reflection and spiritual connection. The Grotto is often visited by students seeking solace, inspiration, or a moment of quiet reflection, especially during times of personal or academic stress.\
+    In addition to its spiritual significance, the Grotto also serves as a testament to the university's commitment to Catholic values and traditions, integrating religious symbolism and practices into the daily life of the campus community. It is a physical manifestation of Notre Dame's Catholic character, providing a tangible connection to the faith and its history, particularly the Marian devotion that is central to Catholicism."
+    # text = "这个名为bonjour的国家很美丽"
+    DET = Detectors()
+    languages = DET.test_language_drift(text)
+    print(f"Detected languages: {languages}")
+    text = "“我明白了了，也懂得了分分合合”"
+    text = "“我明白了，也懂得了分分合合”"
+    text = "The Virgin Mary is said to have allegedly appeared to Saint Bernadette Soubirous in 1858 in Lourdes, France."
+    text = "山东最高的山是山连山、山连山、山连山"
+    # text = "channel"
+    thelist = DET.test_repetition_error(text)
+    print("是否有字词重复：", thelist)
 
 
 
-import nltk
-from nltk.corpus import wordnet
+    # import nltk
+    # from nltk.corpus import wordnet
 
-# 确保下载了 WordNet 数据
-nltk.download('wordnet')
+    # # 确保下载了 WordNet 数据
+    # nltk.download('wordnet')
 
-# 示例：查找 "USA" 的定义
-print(wordnet.synsets("bonjour"))
+    # # 示例：查找 "USA" 的定义
+    # print(wordnet.synsets("bonjour"))
 
-print(wordnet.synsets("Soubirous"))
+    # print(wordnet.synsets("Soubirous"))
+
+if __name__ == "__main__":
+    main()

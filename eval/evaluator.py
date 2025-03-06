@@ -151,34 +151,34 @@ class evaluator(ABC):
 
     
 
-EVA_TEST = evaluator()
-ref = "The capital of France is Paris."
-answer = "巴黎 is the capital of France."
+# EVA_TEST = evaluator()
+# ref = "The capital of France is Paris."
+# answer = "巴黎 is the capital of France."
 
-F1_score = EVA_TEST.cal_F1_score(answer, ref)
-f1_score = compute_f1(ref, answer)
-print(f"F1-Score: {f1_score}")
-bleu = EVA_TEST.cal_BLEU(answer, ref)
-rouge = EVA_TEST.cal_ROUGE(answer, ref)
+# F1_score = EVA_TEST.cal_F1_score(answer, ref)
+# f1_score = compute_f1(ref, answer)
+# print(f"F1-Score: {f1_score}")
+# bleu = EVA_TEST.cal_BLEU(answer, ref)
+# rouge = EVA_TEST.cal_ROUGE(answer, ref)
 
-print(f"F1 Score: {F1_score}")
+# print(f"F1 Score: {F1_score}")
 
-print(f"BLEU Score: {bleu}")
+# print(f"BLEU Score: {bleu}")
 
-print("ROUGE Scores:")
-for key, value in rouge.items():
-    print(f"{key}: {value}")
+# print("ROUGE Scores:")
+# for key, value in rouge.items():
+#     print(f"{key}: {value}")
 
-text = "黄土高原的最高山是天台山，但天台山是否在陕西呢？天台山在四川，所以we可能不在陕西。 \
-        那剩下的shallow就是黄土高原help的其他山了。黄土高原的其他山are包括天台山、大昭山、天台山以南的 \
-        plateau、天台山以北的 plateau，以及黄土高原西部的between天台山。其中，天台山是黄土高原的 \
-        最高山，但可能在陕西的天台山是否存在呢？或者，我是不是混淆了黄土高原和黄帝陵的位置？\
-        黄土高原的天台山else可能在黄土高原的南before部，而天台山以南的 plateau可能位于黄土高原的北部，\
-        这样黄土高原的最高山可能在天台山以南的 plateau。"
-language_tags = EVA_TEST.detect_language_per_word(text)
-switches = EVA_TEST.calculate_language_switch_frequency(language_tags)
-print(f"Language switches: {switches}")
+# text = "黄土高原的最高山是天台山，但天台山是否在陕西呢？天台山在四川，所以we可能不在陕西。 \
+#         那剩下的shallow就是黄土高原help的其他山了。黄土高原的其他山are包括天台山、大昭山、天台山以南的 \
+#         plateau、天台山以北的 plateau，以及黄土高原西部的between天台山。其中，天台山是黄土高原的 \
+#         最高山，但可能在陕西的天台山是否存在呢？或者，我是不是混淆了黄土高原和黄帝陵的位置？\
+#         黄土高原的天台山else可能在黄土高原的南before部，而天台山以南的 plateau可能位于黄土高原的北部，\
+#         这样黄土高原的最高山可能在天台山以南的 plateau。"
+# language_tags = EVA_TEST.detect_language_per_word(text)
+# switches = EVA_TEST.calculate_language_switch_frequency(language_tags)
+# print(f"Language switches: {switches}")
 
-seg_result = EVA_TEST.fenci(text)
-print(seg_result)
+# seg_result = EVA_TEST.fenci(text)
+# print(seg_result)
 
